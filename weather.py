@@ -1,5 +1,3 @@
-# pylint: disable=missing-module-docstring
-
 import sys
 import urllib.parse
 import requests
@@ -7,14 +5,9 @@ import requests
 BASE_URI = "https://weather.lewagon.com"
 
 def search_city(query):
-    '''
-    Look for a given city. If multiple options are returned, choose the first one.
-    Return one city (or None)
-    '''
     cities = {'q': query, "limit": 5}
     query_string = urllib.parse.urlencode(cities)
-    endpoint = '/geo/1.0/direct'
-    url = urllib.parse.urljoin(BASE_URI, endpoint + '?' + query_string)
+    url = urllib.parse.urljoin(BASE_URI, f'/geo/1.0/direct?{query_string}')
 
     response = requests.get(url).json()
 
@@ -22,21 +15,50 @@ def search_city(query):
         print("City not found.")
         return None
 
-    # Choose the first city if multiple are found
-    city = response[0]
-    print(f"{city['name']}: ({city['lat']}, {city['lon']})")
-    return city
+    if len(response) > 1:
+        print("Multiple matches found. Please choose a city:")
+        for i, city in enumerate(response, start=1):
+            print(f"{i}. {city['name']}, {city['country']}")
+
+        while True:
+            try:
+                choice = int(input("Enter the number of the city you meant: "))
+                city = response[choice - 1]
+                print(f"You selected: {city['name']}, {city['country']}")
+                return city
+            except (ValueError, IndexError):
+                print("Invalid input.")
+    else:
+        city = response[0]
+        print(f"City: {city['name']}, Country: {city['country']}")
+        return city
 
 def weather_forecast(lat, lon):
-    '''Return a 5-day weather forecast for the city, given its latitude and longitude.'''
+    endpoint = f'/data/2.5/forecast?lat={lat}&lon={lon}'
+    url = BASE_URI + endpoint
+    response = requests.get(url)
+
+    if response.status_code == 200:
+        data = response.json()
+        if 'list' in data:
+            for forecast in data['list'][:5]:
+                date_time = forecast['dt_txt'].split()
+                temperature = forecast['main']['temp'] - 273.15
+                weather_description = forecast['weather'][0]['description']
+                print(f"{date_time[0]}, {weather_description}, ({temperature:.2f}°C),")
+        else:
+            print("Data is incomplete or missing.")
+    else:
+        print(f"Error: {response.status_code} - {response.text}")
 
 def main():
-    '''Ask user for a city and display weather forecast'''
     query = input("City?\n> ")
     city = search_city(query)
 
-    # TODO: Display weather forecast for a given city
-    pass  # YOUR CODE HERE
+    if city:
+        lat = city['lat']
+        lon = city['lon']
+        weather_forecast(lat, lon)
 
 if __name__ == '__main__':
     try:
