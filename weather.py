@@ -6,17 +6,29 @@ import requests
 
 BASE_URI = "https://weather.lewagon.com"
 
-
 def search_city(query):
     '''
-    Look for a given city. If multiple options are returned, have the user choose between them.
+    Look for a given city. If multiple options are returned, choose the first one.
     Return one city (or None)
     '''
-    pass  # YOUR CODE HERE
+    cities = {'q': query, "limit": 5}
+    query_string = urllib.parse.urlencode(cities)
+    endpoint = '/geo/1.0/direct'
+    url = urllib.parse.urljoin(BASE_URI, endpoint + '?' + query_string)
+
+    response = requests.get(url).json()
+
+    if not response:
+        print("City not found.")
+        return None
+
+    # Choose the first city if multiple are found
+    city = response[0]
+    print(f"{city['name']}: ({city['lat']}, {city['lon']})")
+    return city
 
 def weather_forecast(lat, lon):
     '''Return a 5-day weather forecast for the city, given its latitude and longitude.'''
-    pass  # YOUR CODE HERE
 
 def main():
     '''Ask user for a city and display weather forecast'''
