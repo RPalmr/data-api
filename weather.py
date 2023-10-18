@@ -12,13 +12,13 @@ def search_city(query):
     response = requests.get(url).json()
 
     if not response:
-        print("City not found.")
+        print ("City not found.")
         return None
 
     if len(response) > 1:
         print("Multiple matches found. Please choose a city:")
         for i, city in enumerate(response, start=1):
-            print(f"{i}. {city['name']}, {city['country']}")
+            print (f"{i}. {city['name']}, {city['country']}")
 
         while True:
             try:
@@ -27,38 +27,33 @@ def search_city(query):
                 print(f"You selected: {city['name']}, {city['country']}")
                 return city
             except (ValueError, IndexError):
-                print("Invalid input.")
+                print ("Invalid input.")
     else:
         city = response[0]
-        print(f"City: {city['name']}, Country: {city['country']}")
+        print (f"City: {city['name']}, Country: {city['country']}")
         return city
 
 def weather_forecast(lat, lon):
-    endpoint = f'/data/2.5/forecast?lat={lat}&lon={lon}'
-    url = BASE_URI + endpoint
-    response = requests.get(url)
+    url = urllib.parse.urljoin(BASE_URI, "/data/2.5/forecast")
+    forecasts = requests.get(url,
+                             params={'lat': lat, 'lon': lon, 'units': 'metric'},
+                             timeout=10).json()['list']
 
-    if response.status_code == 200:
-        data = response.json()
-        if 'list' in data:
-            for forecast in data['list'][:5]:
-                date_time = forecast['dt_txt'].split()
-                temperature = forecast['main']['temp'] - 273.15
-                weather_description = forecast['weather'][0]['description']
-                print(f"{date_time[0]}, {weather_description}, ({temperature:.2f}°C),")
-        else:
-            print("Data is incomplete or missing.")
-    else:
-        print(f"Error: {response.status_code} - {response.text}")
+    return forecasts[::8]
 
 def main():
     query = input("City?\n> ")
     city = search_city(query)
 
     if city:
+        print (city)
         lat = city['lat']
         lon = city['lon']
-        weather_forecast(lat, lon)
+
+        daily_forecasts = weather_forecast(lat, lon)
+        for forecast in daily_forecasts:
+            max_temp = round(forecast['main']['temp_max'])
+            print (f"{forecast['dt_txt'][:10]}: {forecast['weather'][0]['main']} ({max_temp}°C)")
 
 if __name__ == '__main__':
     try:
