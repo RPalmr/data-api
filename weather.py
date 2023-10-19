@@ -1,3 +1,5 @@
+# pylint: disable=missing-docstring, C0114
+
 import sys
 import urllib.parse
 import requests
